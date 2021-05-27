@@ -127,3 +127,10 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# data ignore
+*.h5
+*.png
+Data/Models/Dis/*.h5
+Data/Models/Gen/*.h5
+Data/Models/GAN/*.h5
