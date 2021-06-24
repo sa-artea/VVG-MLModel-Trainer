@@ -1,0 +1,1 @@
+﻿folder with the discriminator models in h5 format

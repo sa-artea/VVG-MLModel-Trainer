@@ -131,6 +131,10 @@ dmypy.json
 # data ignore
 *.h5
 *.png
+!Data/Models/*.png
+!Data/Reports/img/*.png
+!Data/Reports/learn/*.png
+!Data/Reports/txt/*.png
 Data/Models/Dis/*.h5
 Data/Models/Gen/*.h5
 Data/Models/GAN/*.h5
