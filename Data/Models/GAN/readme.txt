@@ -1,1 +1,0 @@
-﻿folder with the complete GAN models in h5 format
