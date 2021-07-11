@@ -91,6 +91,7 @@ from tensorflow.keras.callbacks import EarlyStopping
 # models
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.models import Model
+from tensorflow.keras.models import load_model 
 
 # shapping layers
 from tensorflow.keras.layers import Masking
@@ -379,12 +380,14 @@ def save_model(model, m_path, m_file):
 
 
 # function to load the ML model
-def load_model(m_path, m_file):
+def load_model(model, m_path, m_file):
 
     fpn = os.path.join(m_path, m_file)
     fpn = fpn + ".h5"
-    model = keras.models.load_model(fpn)
-    return model
+    # model = keras.models.load_model()
+    # model = load_model(fpn)
+    model.load_weights(fpn)
+    # return model
 
 
 # function to cast dataframe and avoid problems with keras
@@ -1251,7 +1254,6 @@ def format_metrics(disr_history, disf_history, gan_history):
 
     return data, headers
 
-
 # function to write data in csv file
 def write_metrics(data, headers, report_fn_path, filename):
 
@@ -1269,8 +1271,68 @@ def write_metrics(data, headers, report_fn_path, filename):
                             quoting=csv.QUOTE_ALL
                             )
 
+# function to write data in csv file
+def read_metrics(report_fn_path, filename):
 
+    # print(report_fn_path, filename)
+    fpn = filename + "-train-history.csv"
+    fpn = os.path.join(report_fn_path, fpn)
+    tdata = pd.read_csv(
+                        fpn,
+                        sep=",",
+                        encoding="utf-8",
+                        engine="python",
+                        quoting=csv.QUOTE_ALL
+                        )
+    return tdata
 
+def extract_history(data):
+
+    disr_history, disf_history, gan_history = None, None, None
+
+    # formating file headers
+    # print("columns len():", len(data.columns))
+    # print("columns:\n", list(data.columns.values))
+    if len(data.columns) == 2*3:
+        disr_history = data[["dis_loss_real",
+                            "dis_acc_real",]]
+        disf_history = data[["dis_loss_fake",
+                             "dis_acc_fake",]]
+        gan_history = data[["gen_gan_loss",
+                            "gen_gan_acc",]]
+
+    if len(data.columns) == 5*3:
+
+        disr_history = data[["dis_loss_real",
+                             "dis_loss_real_img",
+                             "dis_loss_real_txt",
+                             "dis_acc_real_img",
+                             "dis_acc_real_txt",]]
+        disf_history = data[["dis_loss_fake",
+                             "dis_loss_fake_img",
+                             "dis_loss_fake_txt",
+                             "dis_acc_fake_img",
+                             "dis_acc_fake_txt",]]
+        gan_history = data[["gen_loss_fake",
+                            "gen_loss_fake_img",
+                            "gen_loss_fake_txt",
+                            "gen_acc_fake_img",
+                            "gen_acc_fake_txt",]]
+
+    disr_history = disr_history.values.tolist()
+    disf_history = disf_history.values.tolist()
+    gan_history = gan_history.values.tolist()
+    # print("checking stuff!!!")
+    # print("gan_history:\n", type(gan_history), len(gan_history))
+    # print(gan_history[0:5])
+    return disr_history, disf_history, gan_history
+
+# function to load the matrics form the gan/gen/dis history in csv
+def load_metrics(report_fn_path, filename):
+
+    data = read_metrics(report_fn_path, filename)
+    disr_history, disf_history, gan_history = extract_history(data)
+    return disr_history, disf_history, gan_history
 
 
 # function to safe the loss/acc logs in training for the gan/gen/dis models
@@ -1381,7 +1443,7 @@ def test_model(gen_model, dis_model, data, data_shape, train_cfg, test_cfg):
 # special function to train the GAN
 # https://machinelearningmastery.com/how-to-develop-a-generative-adversarial-network-for-an-mnist-handwritten-digits-from-scratch-in-keras/
 # def train(gen_model, dis_model, gan_model, X_img, X_txt, y, labels, epochs, batch_size, save_intervas, fn_config):
-def training_model(gen_model, dis_model, gan_model, data, train_cfg): # epochs, batch_size, save_intervas, fn_config
+def training_model_old(gen_model, dis_model, gan_model, data, train_cfg): # epochs, batch_size, save_intervas, fn_config
 
     # sample size
     dataset_size = train_cfg.get("dataset_size")
@@ -1401,9 +1463,7 @@ def training_model(gen_model, dis_model, gan_model, data, train_cfg): # epochs, 
     synth_batch = train_cfg.get("synth_batch")
     balance_batch = train_cfg.get("balance_batch")
     n = train_cfg.get("gen_sample_size")
-    # trained_epochs = train_cfg.get("trained_epochs")
     epochs = train_cfg.get("max_epochs")
-    # epochs = trained_epochs + max_epochs
     batch_size = train_cfg.get("batch_size")
     half_batch = int(batch_size/2)
     batch_per_epoch = int(dataset_size/batch_size)
@@ -1425,10 +1485,6 @@ def training_model(gen_model, dis_model, gan_model, data, train_cfg): # epochs, 
 	# prepare lists for storing stats each epoch
     disf_hist, disr_hist, gan_hist = list(), list(), list()
 
-    # if is pretrained
-    # if learning_history != None:
-    #     disf_hist, disr_hist, gan_hist = learning_history[0], learning_history[1], learning_history[2]
-
     train_time = None
 
     # train dict config
@@ -1440,7 +1496,7 @@ def training_model(gen_model, dis_model, gan_model, data, train_cfg): # epochs, 
         "gen_sample_size": train_cfg.get("gen_sample_size"),
         "current_epoch": None,
     }
-    # ep = trained_epochs
+
     # iterating in training epochs:
     for ep in range(epochs+1):
         # epoch logs
@@ -1548,15 +1604,9 @@ def training_model(gen_model, dis_model, gan_model, data, train_cfg): # epochs, 
             clear_models(train_cfg, test_cfg)
         
         train_time = lapse_time(train_time, ep)
-        # ep = ep + 1
-
-    # updating training epochs
-    # train_cfg["trained_epochs"] = epochs
-    # train_cfg["learning_history"] = learning_history
-
 
 # function to continue training from history
-def continue_training(gen_model, dis_model, gan_model, data, train_cfg):
+def training_model(gen_model, dis_model, gan_model, data, train_cfg):
 
     # sample size
     dataset_size=train_cfg.get("dataset_size")
@@ -1575,10 +1625,10 @@ def continue_training(gen_model, dis_model, gan_model, data, train_cfg):
     # augmentation factor
     synth_batch = train_cfg.get("synth_batch")
     balance_batch = train_cfg.get("balance_batch")
-    n = train_cfg.get("gen_sample_size")
-    # trained_epochs = train_cfg.get("trained_epochs")
+    trained = train_cfg.get("trained")
+    trained_epochs = train_cfg.get("trained_epochs")
     epochs = train_cfg.get("max_epochs")
-    # epochs = trained_epochs + max_epochs
+
     batch_size = train_cfg.get("batch_size")
     half_batch = int(batch_size/2)
     batch_per_epoch = int(dataset_size/batch_size)
@@ -1593,16 +1643,10 @@ def continue_training(gen_model, dis_model, gan_model, data, train_cfg):
     gan_model_name = train_cfg.get("gan_model_name")
     check_intervas = train_cfg.get("check_epochs")
     save_intervas = train_cfg.get("save_epochs")
-    max_models = train_cfg.get("max_models")
-    pretrain = train_cfg.get("pretrained")
     learning_history = train_cfg.get("learning_history")
 
 	# prepare lists for storing stats each epoch
-    disf_hist, disr_hist, gan_hist = list(), list(), list()
-
-    # if is pretrained
-    # if learning_history != None:
-    #     disf_hist, disr_hist, gan_hist = learning_history[0], learning_history[1], learning_history[2]
+    disr_hist, disf_hist, gan_hist = list(), list(), list()
 
     train_time = None
 
@@ -1613,17 +1657,30 @@ def continue_training(gen_model, dis_model, gan_model, data, train_cfg):
         "batch_size": batch_size,
         "synth_batch": synth_batch,
         "gen_sample_size": train_cfg.get("gen_sample_size"),
-        "current_epoch": None,
+        "current_epoch": trained_epochs,
     }
-    # ep = trained_epochs
+    # print(test_cfg)
+    # print("trained?", trained)
+
+    if trained == True:
+        print("models are already trained!...")
+        print("Loading models...")        
+        load_models(dis_model, gen_model, gan_model, train_cfg, test_cfg)
+        print("Loading metrics...")
+        disr_hist, disf_hist, gan_hist = load_metrics(report_fn_path, 
+                                                        gan_model_name)
+
+    ep = trained_epochs
     # iterating in training epochs:
-    for ep in range(epochs+1):
+    while ep < epochs+1:
+    # for ep in range(epochs+1):
         # epoch logs
         ep_disf_hist, ep_disr_hist, ep_gan_hist = list(), list(), list()
         train_time = datetime.datetime.now()
 
         # iterating over training batchs
         for batch in range(batch_per_epoch):
+            # pass
 
             # select real txt2img for discrimintator
             real_data = gen_real_samples(data, dataset_size, half_batch)
@@ -1707,8 +1764,6 @@ def continue_training(gen_model, dis_model, gan_model, data, train_cfg):
 		# evaluate the model performance sometimes
         if (ep) % check_intervas == 0:
             print("Epoch:", ep+1, "Testing model training process...")
-            
-            # test_model(gen_model, dis_model, data, data_shape, test_cfg) #, synth_batch)
             test_model(gen_model, dis_model, data, data_shape, train_cfg, test_cfg)
             print("Ploting results...")
             plot_metrics(disr_hist, disf_hist, gan_hist, report_fn_path, ep)
@@ -1723,9 +1778,9 @@ def continue_training(gen_model, dis_model, gan_model, data, train_cfg):
             clear_models(train_cfg, test_cfg)
         
         train_time = lapse_time(train_time, ep)
-        # ep = ep + 1
+        ep = ep + 1
 
-
+# function to save GAN models
 def save_models(dis_model, gen_model, gan_model, train_cfg, test_cfg):
 
     ep = test_cfg.get("current_epoch") # = ep
@@ -1749,6 +1804,34 @@ def save_models(dis_model, gen_model, gan_model, train_cfg, test_cfg):
     save_model(dis_model, dis_path, dis_mn)
     save_model(gen_model, gen_path, gen_mn)
     save_model(gan_model, gan_path, gan_mn)
+
+
+# function to save GAN models
+def load_models(dis_model, gen_model, gan_model, train_cfg, test_cfg):
+
+    ep = test_cfg.get("current_epoch")  # = ep
+    # print(ep)
+    epoch_sufix = "-epoch%d" % int(ep)
+
+    model_fn_path = train_cfg.get("models_fn_path")
+    dis_model_name = train_cfg.get("dis_model_name")
+    gen_model_name = train_cfg.get("gen_model_name")
+    gan_model_name = train_cfg.get("gan_model_name")
+
+    # epoch_sufix = "-last"
+    epoch_sufix = str(epoch_sufix)
+    dis_mn = dis_model_name + epoch_sufix
+    gen_mn = gen_model_name + epoch_sufix
+    gan_mn = gan_model_name + epoch_sufix
+
+    dis_path = os.path.join(model_fn_path, "Dis")
+    gen_path = os.path.join(model_fn_path, "Gen")
+    gan_path = os.path.join(model_fn_path, "GAN")
+
+    load_model(dis_model, dis_path, dis_mn)
+    load_model(gen_model, gen_path, gen_mn)
+    load_model(gan_model, gan_path, gan_mn)
+    # return dis_model, gen_model, gan_model
 
 
 def clear_models(train_cfg, test_cfg):
@@ -3773,7 +3856,7 @@ if __name__ == "__main__":
     gan_model_name = "VVG-Text2Img-CGAN"
 
     # to continue training after stoping script
-    continue_training = True
+    cont_train = True
 
     # ramdom seed
     randseed = 42
@@ -4195,9 +4278,9 @@ if __name__ == "__main__":
                             }
 
     # OPT-2
-    MULTI_DIS_WEIGHTS_REF = {"ImgMultiCDisOut":0.6,
-                            "TxtMultiCDisOut":0.4,
-                            }
+    # MULTI_DIS_WEIGHTS_REF = {"ImgMultiCDisOut":0.6,
+    #                         "TxtMultiCDisOut":0.4,
+    #                         }
 
     # img -> MultiCGAN_ImgPlusTxt_Discriminator
     # txt -> MultiCGAN_ImgPlusTxt_Discriminator_1
@@ -4213,9 +4296,9 @@ if __name__ == "__main__":
                             }
 
     # OPT-2
-    MULTI_GEN_WEIGHTS_REF = {"MultiCGAN_ImgPlusTxt_Discriminator":0.6,
-                                "MultiCGAN_ImgPlusTxt_Discriminator_1":0.4,
-                            }
+    # MULTI_GEN_WEIGHTS_REF = {"MultiCGAN_ImgPlusTxt_Discriminator":0.6,
+    #                             "MultiCGAN_ImgPlusTxt_Discriminator_1":0.4,
+    #                         }
 
     # common variables for the models
     # input common vars
@@ -4687,7 +4770,7 @@ if __name__ == "__main__":
 
     # training and batch size
     gan_train_cfg = {
-        "max_epochs": 50, #1000*100*3,
+        "max_epochs": 100, #1000*100*3,
         # "max_epochs": 1000*100*3, # real 1-2
         "latent_dims": latent_dims,
         # "max_epochs": ini_config.get("Training", "MaxEpochs"),
@@ -4718,7 +4801,7 @@ if __name__ == "__main__":
         "max_save_models": 3,
         # "max_save_models": 12, # OPT-1-2
         "latent_dims": latent_dims, # X_txt[0].shape,
-        "pretrained": False,
+        "trained": False,
         "conditioned": True,
         "dataset_size": X_img.shape[0],
         "img_shape": X_img[0].shape,
@@ -4747,22 +4830,22 @@ if __name__ == "__main__":
     # training_model(cgen_img_model, cdis_img_model, cgan_img_model, gan_data, gan_train_cfg)
 
     # training with the muti conditional gan with images + text
-    # training_model(multi_cgen_model, multi_cdis_model, multi_cgan_model, gan_data, gan_train_cfg)
-
+    training_model(multi_cgen_model, multi_cdis_model, multi_cgan_model, gan_data, gan_train_cfg)
 
     # if model is pretrained
     ############ LOading pretrained models!!!! #################
     LAST_EPOCH = 50
     # LAST_EPOCH = 4300 # OPT-1-2
-    gan_train_cfg["conditioned"] = True
+    gan_train_cfg["trained"] = True
     gan_train_cfg["trained_epochs"] = LAST_EPOCH
     # print("---- gan_train_cfg ----\n", gan_train_cfg)
 
-    # load 
-    if gan_train_cfg["conditioned"] == True:
-        pass
-
-
+    # training with the muti conditional gan with images + text
+    training_model(multi_cgen_model, 
+                    multi_cdis_model, 
+                    multi_cgan_model, 
+                    gan_data, 
+                    gan_train_cfg)
 
 
 
