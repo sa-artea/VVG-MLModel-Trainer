@@ -132,9 +132,14 @@ dmypy.json
 *.h5
 *.png
 !Data/Models/*.png
-!Data/Reports/img/*.png
-!Data/Reports/learn/*.png
-!Data/Reports/txt/*.png
+!Data/Reports/img/MCGAN-Gen-img-sample.png.png
+!Data/Reports/learn/MCGAN-Gen-learn-curve.png
+!Data/Reports/txt/MCGAN-Gen-txt-sample.png
+Data/Reports/img/*.png
+Data/Reports/learn/*.png
+Data/Reports/txt/*.png
 Data/Models/Dis/*.h5
 Data/Models/Gen/*.h5
 Data/Models/GAN/*.h5
+Data/Models/*
+Data/*.zip

@@ -22,7 +22,6 @@ from keras.layers import Dropout
 from matplotlib import pyplot
 
 # define the standalone discriminator model
-
 def define_discriminator(in_shape=(28, 28, 1)):
 	model = Sequential()
 	model.add(Conv2D(64, (3, 3), strides=(2, 2),
@@ -40,8 +39,6 @@ def define_discriminator(in_shape=(28, 28, 1)):
 	return model
 
 # define the standalone generator model
-
-
 def define_generator(latent_dim):
 	model = Sequential()
 	# foundation for 7x7 image
@@ -59,8 +56,6 @@ def define_generator(latent_dim):
 	return model
 
 # define the combined generator and discriminator model, for updating the generator
-
-
 def define_gan(g_model, d_model):
 	# make weights in the discriminator not trainable
 	d_model.trainable = False
@@ -76,8 +71,6 @@ def define_gan(g_model, d_model):
 	return model
 
 # load and prepare mnist training images
-
-
 def load_real_samples():
 	# load mnist dataset
 	(trainX, _), (_, _) = load_data()
@@ -90,8 +83,6 @@ def load_real_samples():
 	return X
 
 # select real samples
-
-
 def generate_real_samples(dataset, n_samples):
 	# choose random instances
 	ix = randint(0, dataset.shape[0], n_samples)
@@ -102,8 +93,6 @@ def generate_real_samples(dataset, n_samples):
 	return X, y
 
 # generate points in latent space as input for the generator
-
-
 def generate_latent_points(latent_dim, n_samples):
 	# generate points in the latent space
 	x_input = randn(latent_dim * n_samples)
@@ -112,8 +101,6 @@ def generate_latent_points(latent_dim, n_samples):
 	return x_input
 
 # use the generator to generate n fake examples, with class labels
-
-
 def generate_fake_samples(g_model, latent_dim, n_samples):
 	# generate points in latent space
 	x_input = generate_latent_points(latent_dim, n_samples)
@@ -124,8 +111,6 @@ def generate_fake_samples(g_model, latent_dim, n_samples):
 	return X, y
 
 # create and save a plot of generated images (reversed grayscale)
-
-
 def save_plot(examples, epoch, n=10):
 	# plot images
 	for i in range(n * n):
@@ -141,8 +126,6 @@ def save_plot(examples, epoch, n=10):
 	pyplot.close()
 
 # evaluate the discriminator, plot generated images, save generator model
-
-
 def summarize_performance(epoch, g_model, d_model, dataset, latent_dim, n_samples=100):
 	# prepare real samples
 	X_real, y_real = generate_real_samples(dataset, n_samples)
@@ -161,8 +144,6 @@ def summarize_performance(epoch, g_model, d_model, dataset, latent_dim, n_sample
 	g_model.save(filename)
 
 # train the generator and discriminator
-
-
 def train(g_model, d_model, gan_model, dataset, latent_dim, n_epochs=100, n_batch=256):
 	bat_per_epo = int(dataset.shape[0] / n_batch)
 	half_batch = int(n_batch / 2)
@@ -292,142 +273,142 @@ def create_multi_cdiscriminator(img_shape, txt_shape, n_labels, model_cfg):
                              padding=pad, name="ImgCDisLblOut")(cond12)
 
     # intermediate LSTM layer for text
-    cond14 = LSTM(int(lbl_lstm/2,
+    cond14 = LSTM(int(lbl_lstm/2),
                       activation=lbl_ly_actf,
                       input_shape=mem_shape,
                       return_sequences=lbl_rs,
                       name="TxtCDisLblLSTM_14")(cond6t)
 
-                  # batch normalization + drop layers to avoid overfit for img
-                  cond15=BatchNormalization(name="TxtCDisLblBN_14")(cond14)
-                  cond16=Dropout(hid_ldrop, name="TxtCDisLblDrop_15")(cond15)
+    # batch normalization + drop layers to avoid overfit for img
+    cond15=BatchNormalization(name="TxtCDisLblBN_14")(cond14)
+    cond16=Dropout(hid_ldrop, name="TxtCDisLblDrop_15")(cond15)
 
-                  # intermediate LSTM layer for text
-                  cond17=LSTM(lbl_lstm,
-                              activation=lbl_ly_actf,
-                              input_shape=mem_shape,
-                              return_sequences=lbl_rs,
-                              name="TxtCDisLblLSTM_19")(cond16)
+    # intermediate LSTM layer for text
+    cond17=LSTM(lbl_lstm,
+                activation=lbl_ly_actf,
+                input_shape=mem_shape,
+                return_sequences=lbl_rs,
+                name="TxtCDisLblLSTM_19")(cond16)
 
-                  # LAYER CREATION
-                  # input layer
-                  in_img=Input(shape=img_shape, name="CDisImgIn")
+    # LAYER CREATION
+    # input layer
+    in_img=Input(shape=img_shape, name="CDisImgIn")
 
-                  concat_img=Concatenate(
-                      axis=-1, name="ImgCDisConcat_21")([in_img, cond13])
+    concat_img=Concatenate(
+        axis=-1, name="ImgCDisConcat_21")([in_img, cond13])
 
-                  # DISCRIMINATOR LAYERS
-                  # intermediate conv layer
-                  lyr1=Conv2D(in_filters, kernel_size=in_ksize,
-                              padding=in_pad, activation=in_lyr_act,
-                              strides=in_stsize, name="ImgCDisConv2D_22")(concat_img)
+    # DISCRIMINATOR LAYERS
+    # intermediate conv layer
+    lyr1=Conv2D(in_filters, kernel_size=in_ksize,
+                padding=in_pad, activation=in_lyr_act,
+                strides=in_stsize, name="ImgCDisConv2D_22")(concat_img)
 
-                  # intermediate conv layer
-                  lyr2=Conv2D(int(filters/2), kernel_size=ksize,
-                              padding=pad, activation=hid_lyr_act,
-                              strides=stsize, name="ImgCDisConv2D_23")(lyr1)
+    # intermediate conv layer
+    lyr2=Conv2D(int(filters/2), kernel_size=ksize,
+                padding=pad, activation=hid_lyr_act,
+                strides=stsize, name="ImgCDisConv2D_23")(lyr1)
 
-                  # batch normalization + drop layers to avoid overfit
-                  lyr3=BatchNormalization(name="ImgCDisBN_24")(lyr2)
-                  lyr4=Dropout(hid_ldrop, name="ImgCDisDrop_25")(lyr3)
+    # batch normalization + drop layers to avoid overfit
+    lyr3=BatchNormalization(name="ImgCDisBN_24")(lyr2)
+    lyr4=Dropout(hid_ldrop, name="ImgCDisDrop_25")(lyr3)
 
-                  # intermediate conv layer
-                  lyr5=Conv2D(int(filters/4), kernel_size=ksize,
-                              padding=pad, activation=hid_lyr_act,
-                              strides=stsize, name="ImgCDisConv2D_26")(lyr4)
+    # intermediate conv layer
+    lyr5=Conv2D(int(filters/4), kernel_size=ksize,
+                padding=pad, activation=hid_lyr_act,
+                strides=stsize, name="ImgCDisConv2D_26")(lyr4)
 
-                  # intermediate conv layer
-                  lyr6=Conv2D(int(filters/8), kernel_size=ksize,
-                              padding=pad, activation=hid_lyr_act,
-                              strides=stsize, name="ImgCDisConv2D_27")(lyr5)
+    # intermediate conv layer
+    lyr6=Conv2D(int(filters/8), kernel_size=ksize,
+                padding=pad, activation=hid_lyr_act,
+                strides=stsize, name="ImgCDisConv2D_27")(lyr5)
 
-                  # batch normalization + drop layers to avoid overfit
-                  lyr7=BatchNormalization(name="ImgCDisBN_28")(lyr6)
-                  lyr8=Dropout(hid_ldrop, name="ImgCDisDrop_29")(lyr7)
+    # batch normalization + drop layers to avoid overfit
+    lyr7=BatchNormalization(name="ImgCDisBN_28")(lyr6)
+    lyr8=Dropout(hid_ldrop, name="ImgCDisDrop_29")(lyr7)
 
-                  # flatten from 2D to 1D
-                  lyr9=Flatten(name="ImgCDisFlat_29")(lyr8)
+    # flatten from 2D to 1D
+    lyr9=Flatten(name="ImgCDisFlat_29")(lyr8)
 
-                  #TXT DISCRIMINATOR
-                  # LAYER CREATION
-                  # input layer
-                  in_txt=Input(shape=txt_shape, name="CDisTxtIn")
+    #TXT DISCRIMINATOR
+    # LAYER CREATION
+    # input layer
+    in_txt=Input(shape=txt_shape, name="CDisTxtIn")
 
-                  # concat txt input with labels conditional
-                  concat_txt=Concatenate(
-                      axis=-1, name="TxtCDisConcat_31")([in_txt, cond17])
+    # concat txt input with labels conditional
+    concat_txt=Concatenate(
+        axis=-1, name="TxtCDisConcat_31")([in_txt, cond17])
 
-                  # DISCRIMINATOR LAYERS
-                  # masking input text
-                  lyr10=Masking(mask_value=mval, input_shape=txt_shape,
-                                name="TxtCDisMask_32")(concat_txt)  # concat1
+    # DISCRIMINATOR LAYERS
+    # masking input text
+    lyr10=Masking(mask_value=mval, input_shape=txt_shape,
+                name="TxtCDisMask_32")(concat_txt)  # concat1
 
-                  # input LSTM layer
-                  lyr11=LSTM(in_lstm, activation=in_lyr_act,
-                             input_shape=txt_shape,
-                             return_sequences=in_rs,
-                             name="TxtDisLSTM_33")(lyr10)
+    # input LSTM layer
+    lyr11=LSTM(in_lstm, activation=in_lyr_act,
+                input_shape=txt_shape,
+                return_sequences=in_rs,
+                name="TxtDisLSTM_33")(lyr10)
 
-                  # batch normalization + drop layers to avoid overfit
-                  lyr12=BatchNormalization(name="TxtDisBN_34")(lyr11)
-                  lyr13=Dropout(hid_ldrop, name="TxtDisDrop_4")(lyr12)
+    # batch normalization + drop layers to avoid overfit
+    lyr12=BatchNormalization(name="TxtDisBN_34")(lyr11)
+    lyr13=Dropout(hid_ldrop, name="TxtDisDrop_4")(lyr12)
 
-                  # intermediate LSTM layer
-                  lyr14=LSTM(int(lstm_units/2),
-                             activation=hid_lyr_act,
-                             input_shape=mem_shape,
-                             return_sequences=rs,
-                             name="TxtDisLSTM_5")(lyr13)
+    # intermediate LSTM layer
+    lyr14=LSTM(int(lstm_units/2),
+                activation=hid_lyr_act,
+                input_shape=mem_shape,
+                return_sequences=rs,
+                name="TxtDisLSTM_5")(lyr13)
 
-                  # intermediate LSTM layer
-                  lyr15=LSTM(int(lstm_units/4),
-                             activation=hid_lyr_act,
-                             input_shape=mem_shape,
-                             return_sequences=rs,
-                             name="TxtDisLSTM_6")(lyr14)
+    # intermediate LSTM layer
+    lyr15=LSTM(int(lstm_units/4),
+                activation=hid_lyr_act,
+                input_shape=mem_shape,
+                return_sequences=rs,
+                name="TxtDisLSTM_6")(lyr14)
 
-                  # batch normalization + drop layers to avoid overfit
-                  lyr16=BatchNormalization(name="TxtDisBN_7")(lyr15)
-                  lyr17=Dropout(hid_ldrop, name="TxtDisDrop_8")(lyr16)
+    # batch normalization + drop layers to avoid overfit
+    lyr16=BatchNormalization(name="TxtDisBN_7")(lyr15)
+    lyr17=Dropout(hid_ldrop, name="TxtDisDrop_8")(lyr16)
 
-                  # flatten from 2D to 1D
-                  lyr18=Flatten(name="TxtDisFlat_9")(lyr17)
+    # flatten from 2D to 1D
+    lyr18=Flatten(name="TxtDisFlat_9")(lyr17)
 
-                  # concat img encoding + txt encoding
-                  concat_encoding=Concatenate(
-                      axis=-1, name="DenseCDisConcat_31")([lyr18, lyr9])
+    # concat img encoding + txt encoding
+    concat_encoding=Concatenate(
+        axis=-1, name="DenseCDisConcat_31")([lyr18, lyr9])
 
-                  # dense classifier layers
-                  lyr19=Dense(int(mid_disn), activation=hid_cls_act,
-                              name="TxtDisDense_10")(concat_encoding)
-                  lyr20=Dense(int(mid_disn/2), activation=hid_cls_act,
-                              name="TxtDisDense_11")(lyr19)
-                  # drop layer
-                  lyr21=Dropout(hid_ldrop, name="TxtDisDrop_12")(lyr20)
+    # dense classifier layers
+    lyr19=Dense(int(mid_disn), activation=hid_cls_act,
+                name="TxtDisDense_10")(concat_encoding)
+    lyr20=Dense(int(mid_disn/2), activation=hid_cls_act,
+                name="TxtDisDense_11")(lyr19)
+    # drop layer
+    lyr21=Dropout(hid_ldrop, name="TxtDisDrop_12")(lyr20)
 
-                  # dense classifier layers
-                  lyr22=Dense(int(mid_disn/4), activation=hid_cls_act,
-                              name="TxtDisDense_13")(lyr21)
-                  lyr23=Dense(int(mid_disn/8), activation=hid_cls_act,
-                              name="TxtDisDense_14")(lyr22)
-                  # drop layer
-                  lyr24=Dropout(hid_ldrop, name="TxtDisDrop_15")(lyr23)
+    # dense classifier layers
+    lyr22=Dense(int(mid_disn/4), activation=hid_cls_act,
+                name="TxtDisDense_13")(lyr21)
+    lyr23=Dense(int(mid_disn/8), activation=hid_cls_act,
+                name="TxtDisDense_14")(lyr22)
+    # drop layer
+    lyr24=Dropout(hid_ldrop, name="TxtDisDrop_15")(lyr23)
 
-                  # dense classifier layers
-                  lyr25=Dense(int(mid_disn/16), activation=hid_cls_act,
-                              name="TxtDisDense_16")(lyr24)
-                  lyr26=Dense(int(mid_disn/32), activation=hid_cls_act,
-                              name="TxtDisDense_17")(lyr25)
+    # dense classifier layers
+    lyr25=Dense(int(mid_disn/16), activation=hid_cls_act,
+                name="TxtDisDense_16")(lyr24)
+    lyr26=Dense(int(mid_disn/32), activation=hid_cls_act,
+                name="TxtDisDense_17")(lyr25)
 
-                  # output layer
-                  out_cls=Dense(out_nsize, activation=out_lyr_act,
-                                name="TxtDisOut")(lyr26)
+    # output layer
+    out_cls=Dense(out_nsize, activation=out_lyr_act,
+                name="TxtDisOut")(lyr26)
 
-                  # model definition
-                  model=Model(
-                      inputs=[in_img, in_txt, in_labels], outputs=out_cls)
+    # model definition
+    model=Model(
+        inputs=[in_img, in_txt, in_labels], outputs=out_cls)
 
-                  return model
+    return model
 
 
 
