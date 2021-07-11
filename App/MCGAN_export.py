@@ -181,7 +181,7 @@ def scale_img(img, scale_pct):
     height = int(img.shape[0]*scale_pct/100)
     dim = (width, height)
     # resize image
-    ans = cv2.resize(img, dim, interpolation = cv2.INTER_AREA)
+    ans = cv2.resize(img, dim, interpolation=cv2.INTER_AREA)
     return ans
 
 
@@ -192,7 +192,7 @@ def std_img(img, minv, maxv, stype="std"):
 
     if stype == "std":
         ans = img.astype("float32")/float(rangev)
-    
+
     elif stype == "ctr":
         rangev = float(rangev/2)
         ans = (img.astype("float32")-rangev)/rangev
@@ -1645,7 +1645,7 @@ def training_model(gen_model, dis_model, gan_model, data, train_cfg):
     save_intervas = train_cfg.get("save_epochs")
     learning_history = train_cfg.get("learning_history")
 
-	# prepare lists for storing stats each epoch
+    # prepare lists for storing stats each epoch
     disr_hist, disf_hist, gan_hist = list(), list(), list()
 
     train_time = None
@@ -1664,13 +1664,14 @@ def training_model(gen_model, dis_model, gan_model, data, train_cfg):
 
     if trained == True:
         print("models are already trained!...")
-        print("Loading models...")        
+        print("Loading models...")
         load_models(dis_model, gen_model, gan_model, train_cfg, test_cfg)
         print("Loading metrics...")
         disr_hist, disf_hist, gan_hist = load_metrics(report_fn_path, 
                                                         gan_model_name)
 
     ep = trained_epochs
+    print("--- ep!!! ---\n",ep)
     # iterating in training epochs:
     while ep < epochs+1:
     # for ep in range(epochs+1):
@@ -1776,7 +1777,7 @@ def training_model(gen_model, dis_model, gan_model, data, train_cfg):
             save_models(dis_model, gen_model, gan_model, train_cfg, test_cfg)
             print("Cleaning old models...")
             clear_models(train_cfg, test_cfg)
-        
+
         train_time = lapse_time(train_time, ep)
         ep = ep + 1
 
@@ -3767,7 +3768,7 @@ if __name__ == "__main__":
     # ===================== CUDA CHECK =================
 
     # disable GPU
-    os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
     # ckeking GPU availability
     # device_lib.list_local_devices()
@@ -4770,7 +4771,7 @@ if __name__ == "__main__":
 
     # training and batch size
     gan_train_cfg = {
-        "max_epochs": 100, #1000*100*3,
+        "max_epochs": 50, #1000*100*3,
         # "max_epochs": 1000*100*3, # real 1-2
         "latent_dims": latent_dims,
         # "max_epochs": ini_config.get("Training", "MaxEpochs"),
@@ -4837,6 +4838,7 @@ if __name__ == "__main__":
     LAST_EPOCH = 50
     # LAST_EPOCH = 4300 # OPT-1-2
     gan_train_cfg["trained"] = True
+    gan_train_cfg["max_epochs"] = 100
     gan_train_cfg["trained_epochs"] = LAST_EPOCH
     # print("---- gan_train_cfg ----\n", gan_train_cfg)
 
